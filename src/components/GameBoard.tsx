@@ -35,9 +35,9 @@ const getGridStyle = (index: number): React.CSSProperties => {
 
 const GameBoard: React.FC<GameBoardProps> = ({ gameState, children }) => {
   return (
-    <div className="relative inline-grid grid-cols-8 grid-rows-8 gap-1.5 bg-slate-900 p-4 rounded-[2.5rem] shadow-2xl border-[8px] border-slate-800 overflow-visible">
+    <div className="relative inline-grid grid-cols-8 grid-rows-8 gap-0.5 sm:gap-1 md:gap-1.5 bg-slate-900 p-1 sm:p-2 md:p-4 rounded-xl sm:rounded-[2.5rem] shadow-2xl border-[3px] sm:border-[8px] border-slate-800 overflow-visible">
       {/* Board Background Decor */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800 to-slate-950 rounded-[2rem] -z-10"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800 to-slate-950 rounded-lg sm:rounded-[2rem] -z-10"></div>
       
       {gameState.tiles.map((tile, index) => {
          const activePlayer = gameState.players.find(p => p.position === index);
@@ -70,7 +70,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameState, children }) => {
                                 animate={{ opacity: 1, y: -50, scale: 1.2 }}
                                 exit={{ opacity: 0, y: -80 }}
                                 transition={{ duration: 1.5, ease: "easeOut" }}
-                                className={`absolute left-1/2 -translate-x-1/2 -top-6 font-black text-xl drop-shadow-md pointer-events-none whitespace-nowrap ${effect.value >= 0 ? 'text-green-400' : 'text-red-500'}`}
+                                className={`absolute left-1/2 -translate-x-1/2 -top-3 sm:-top-6 font-black text-xs sm:text-xl drop-shadow-md pointer-events-none whitespace-nowrap ${effect.value >= 0 ? 'text-green-400' : 'text-red-500'}`}
                                 style={{ 
                                     zIndex: 60,
                                     textShadow: effect.value >= 0 
@@ -119,7 +119,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameState, children }) => {
                                                 : 'drop-shadow(0 0 5px rgba(239, 68, 68, 0.7))'
                                         }}
                                     >
-                                        <MoneyIcon size={26} />
+                                        <MoneyIcon className="w-4 h-4 sm:w-6 sm:h-6" />
                                     </motion.div>
                                 ))}
                             </div>
@@ -131,7 +131,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ gameState, children }) => {
       })}
       
       {/* Center Area */}
-      <div className="col-start-2 col-end-8 row-start-2 row-end-8 bg-slate-50/95 backdrop-blur-sm rounded-3xl m-2 shadow-inner flex flex-col overflow-hidden relative border border-slate-200">
+      <div className="col-start-2 col-end-8 row-start-2 row-end-8 bg-slate-50/95 backdrop-blur-sm rounded-lg sm:rounded-3xl m-0.5 sm:m-2 shadow-inner flex flex-col overflow-hidden relative border border-slate-200">
          {children}
       </div>
     </div>

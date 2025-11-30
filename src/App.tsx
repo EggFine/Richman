@@ -235,29 +235,29 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4 font-sans text-slate-200 select-none overflow-x-hidden">
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-2 sm:p-4 font-sans text-slate-200 select-none overflow-x-hidden">
       <motion.div 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="flex items-center gap-4 mb-6"
+        className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-6 mt-2 sm:mt-0"
       >
-        <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-500 drop-shadow-lg tracking-wider">
-          RICHMAN <span className="text-2xl text-white/50 font-mono align-super">v4</span>
+        <h1 className="text-2xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-500 drop-shadow-lg tracking-wider">
+          RICHMAN <span className="text-xs sm:text-2xl text-white/50 font-mono align-super">v4</span>
         </h1>
-        <div className="bg-slate-800 px-3 py-1 rounded-full text-xs font-mono text-slate-400 border border-slate-700 flex items-center gap-2">
+        <div className="bg-slate-800 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-mono text-slate-400 border border-slate-700 flex items-center gap-1 sm:gap-2">
             <span>📅 第 {gameState.day} 天</span>
             <span className="w-px h-3 bg-slate-600"></span>
             <span className="flex items-center gap-1 text-pink-400"><Sparkles size={10}/> 下次开奖: {gameState.daysUntilDraw}天</span>
         </div>
       </motion.div>
       
-      <div className="flex flex-col xl:flex-row gap-8 items-center xl:items-start w-full max-w-7xl justify-center">
+      <div className="flex flex-col xl:flex-row gap-4 sm:gap-8 items-center xl:items-start w-full max-w-7xl justify-center">
         
         {/* Left Panel: Board */}
-        <div className="flex-shrink-0 scale-90 sm:scale-100 origin-top xl:origin-top-right">
+        <div className="flex-shrink-0 w-full sm:w-auto flex justify-center origin-top xl:origin-top-right">
           <GameBoard gameState={gameState}>
-            <div className="h-full w-full flex flex-col justify-center items-center relative p-4">
-               <div className="absolute top-4 w-full text-center text-slate-400 font-bold text-xs uppercase tracking-[0.3em] opacity-50">Central Park</div>
+            <div className="h-full w-full flex flex-col justify-center items-center relative p-1 sm:p-4">
+               <div className="absolute top-1 sm:top-4 w-full text-center text-slate-400 font-bold text-[8px] sm:text-xs uppercase tracking-[0.3em] opacity-50">Central Park</div>
                
                <Controls 
                   onRoll={handleRoll} 
@@ -276,12 +276,12 @@ function App() {
 
                <button 
                   onClick={() => setGameState(prev => ({...prev, activeModal: 'ASSETS'}))}
-                  className="mt-4 flex items-center gap-1 bg-slate-200 text-slate-800 px-4 py-2 rounded-full text-xs font-bold hover:bg-white hover:scale-105 transition-all shadow-lg"
+                  className="mt-2 sm:mt-4 flex items-center gap-1 bg-slate-200 text-slate-800 px-2 py-1 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold hover:bg-white hover:scale-105 transition-all shadow-lg"
                >
-                   <Building2 size={14}/> 我的资产
+                   <Building2 className="w-3 h-3 sm:w-4 sm:h-4"/> 我的资产
                </button>
 
-               <div className="mt-4 text-center text-slate-400 text-xs font-mono bg-slate-100/50 px-3 py-1 rounded-full">
+               <div className="mt-1 sm:mt-4 text-center text-slate-400 text-[10px] sm:text-xs font-mono bg-slate-100/50 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full">
                    当前回合: <span className="font-bold text-slate-800">{gameState.players[gameState.currentPlayerIndex].name}</span>
                </div>
             </div>
@@ -289,19 +289,21 @@ function App() {
         </div>
 
         {/* Right Panel: Info & Logs */}
-        <div className="flex flex-col gap-4 w-full max-w-md h-[650px] bg-slate-800/50 p-4 rounded-3xl border border-slate-700/50 shadow-2xl backdrop-blur-md">
-           <div className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">玩家状态</div>
+        <div className="flex flex-col gap-2 sm:gap-4 w-full max-w-md h-auto max-h-[500px] sm:h-[650px] sm:max-h-none bg-slate-800/50 p-2 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-700/50 shadow-2xl backdrop-blur-md">
+           <div className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest mb-1 sm:mb-2">玩家状态</div>
            
            {/* Player Stats */}
-           <div className="flex flex-col gap-3">
+           <div className="flex flex-col gap-2 sm:gap-3">
              {gameState.players.map((p, i) => (
                <PlayerInfo key={p.id} player={p} isCurrent={i === gameState.currentPlayerIndex} />
              ))}
            </div>
 
-           <div className="mt-4 text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">游戏记录</div>
+           <div className="mt-2 sm:mt-4 text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest mb-1 sm:mb-2">游戏记录</div>
            {/* Game Log */}
-           <GameLog logs={gameState.gameLog} />
+           <div className="flex-1 overflow-hidden flex flex-col">
+              <GameLog logs={gameState.gameLog} />
+           </div>
            
            <AnimatePresence>
             {gameState.winner && (
