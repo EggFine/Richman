@@ -1,14 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 
 const GameLog: React.FC<{ logs: string[] }> = ({ logs }) => {
-  const endRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (containerRef.current) {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   }, [logs]);
 
   return (
-    <div className="flex-1 bg-slate-900/80 text-green-400 p-3 font-mono text-[10px] sm:text-xs overflow-y-auto rounded-xl border border-slate-700 shadow-inner scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent h-full">
+    <div ref={containerRef} className="flex-1 bg-slate-900/80 text-green-400 p-3 font-mono text-[10px] sm:text-xs overflow-y-auto rounded-xl border border-slate-700 shadow-inner scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent h-full">
       {logs.length === 0 && <div className="text-slate-600 text-center italic mt-4">游戏记录将显示在这里...</div>}
       {logs.map((log, i) => (
         <div key={i} className="mb-1.5 border-b border-slate-800/50 pb-1 last:border-0 leading-relaxed break-words">
@@ -18,7 +20,6 @@ const GameLog: React.FC<{ logs: string[] }> = ({ logs }) => {
             </span>
         </div>
       ))}
-      <div ref={endRef} />
     </div>
   );
 };
