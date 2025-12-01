@@ -383,6 +383,7 @@ export const buyStock = (state: GameState, playerId: string, companyId: string, 
         player.money -= cost;
         newState = addMoneyEffect(newState, -cost, player.position);
         player.portfolio = { ...player.portfolio, [companyId]: (player.portfolio[companyId] || 0) + shares };
+        newState.players = [...newState.players];
         newState.players[playerIndex] = player;
         newState.gameLog = [...newState.gameLog, `📉 ${player.name} 买入 ${shares} 股 ${company.name}.`];
     }
@@ -401,6 +402,7 @@ export const sellStock = (state: GameState, playerId: string, companyId: string,
         player.money += profit;
         newState = addMoneyEffect(newState, profit, player.position);
         player.portfolio = { ...player.portfolio, [companyId]: currentShares - shares };
+        newState.players = [...newState.players];
         newState.players[playerIndex] = player;
         newState.gameLog = [...newState.gameLog, `📈 ${player.name} 卖出 ${shares} 股 ${company.name}.`];
     }
@@ -447,6 +449,115 @@ export const buyLotteryAI = (state: GameState, playerId: string): GameState => {
         }
     }
     return buyLottery(state, playerId, numbers);
+};
+
+// --- AI 炒股策略 ---
+
+// 计算价格趋势（正数=上涨，负数=下跌）
+const calculateTrend = (history: number[]): number => {
+    if (history.length < 2) return 0;
+    const recent = history.slice(-5); // 最近5个数据点
+    if (recent.length < 2) return 0;
+    
+    // 计算简单移动平均线的斜率
+    const firstHalf = recent.slice(0, Math.ceil(recent.length / 2));
+    const secondHalf = recent.slice(Math.floor(recent.length / 2));
+    const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+    
+    return (secondAvg - firstAvg) / firstAvg; // 返回变化百分比
+};
+
+// 计算持仓成本（简化版：用历史中间价估算）
+const estimateCostBasis = (history: number[]): number => {
+    if (history.length === 0) return 0;
+    return history.reduce((a, b) => a + b, 0) / history.length;
+};
+
+// AI 炒股主函数
+export const aiTradeStocks = (state: GameState, playerId: string): GameState => {
+    let newState = { ...state };
+    const playerIndex = newState.players.findIndex(p => p.id === playerId);
+    const player = newState.players[playerIndex];
+    
+    // 不是AI或已破产则跳过
+    if (!player.isAi || player.isBankrupt) return newState;
+    
+    // 保留周转资金：至少保留 $3000 或当前资金的 40%，取较大值
+    const reserveMoney = Math.max(3000, player.money * 0.4);
+    
+    // 遍历所有公司进行交易决策
+    for (const company of newState.companies) {
+        const currentPrice = company.price;
+        const trend = calculateTrend(company.history);
+        const costBasis = estimateCostBasis(company.history);
+        const currentShares = player.portfolio[company.id] || 0;
+        const currentValue = currentShares * currentPrice;
+        
+        // --- 卖出逻辑 ---
+        if (currentShares > 0) {
+            // 计算盈亏比例
+            const profitRatio = (currentPrice - costBasis) / costBasis;
+            
+            // 卖出条件：
+            // 1. 盈利超过 15%，落袋为安
+            // 2. 趋势明显下跌（< -8%）且有持仓
+            // 3. 亏损超过 20%，止损
+            const shouldSell = 
+                profitRatio > 0.15 ||  // 盈利 15% 以上
+                (trend < -0.08 && currentShares > 0) ||  // 趋势下跌
+                profitRatio < -0.20;  // 止损
+            
+            if (shouldSell) {
+                // 根据情况决定卖出数量
+                let sharesToSell = currentShares;
+                
+                // 如果是盈利卖出，只卖一半锁定利润
+                if (profitRatio > 0.15 && trend > 0) {
+                    sharesToSell = Math.ceil(currentShares / 2);
+                }
+                
+                if (sharesToSell > 0) {
+                    newState = sellStock(newState, playerId, company.id, sharesToSell);
+                }
+            }
+        }
+        
+        // --- 买入逻辑 ---
+        // 更新玩家状态（可能刚刚卖出了股票）
+        const updatedPlayer = newState.players[playerIndex];
+        const updatedAvailableMoney = updatedPlayer.money - reserveMoney;
+        
+        if (updatedAvailableMoney > currentPrice * 5) {  // 至少能买 5 股
+            // 买入条件：
+            // 1. 价格低于历史均价（便宜）
+            // 2. 趋势开始上涨或趋于平稳（不追高）
+            // 3. 当前持仓价值不超过总资金的 30%
+            const isCheap = currentPrice < costBasis * 0.95;  // 价格低于均价 5%
+            const isTrendingUp = trend > 0 && trend < 0.15;  // 温和上涨，不追高
+            const isStabilizing = Math.abs(trend) < 0.05;  // 趋于平稳
+            const notOverexposed = currentValue < updatedPlayer.money * 0.3;  // 单股不超过 30%
+            
+            const shouldBuy = (isCheap || isTrendingUp || isStabilizing) && notOverexposed;
+            
+            if (shouldBuy) {
+                // 计算购买数量：用可用资金的 10-20%
+                const buyBudget = updatedAvailableMoney * (0.1 + Math.random() * 0.1);
+                const sharesToBuy = Math.floor(buyBudget / currentPrice);
+                
+                // 高波动性股票少买一点
+                const adjustedShares = company.volatility > 0.15 
+                    ? Math.floor(sharesToBuy * 0.6) 
+                    : sharesToBuy;
+                
+                if (adjustedShares >= 5) {  // 最少买 5 股
+                    newState = buyStock(newState, playerId, company.id, adjustedShares);
+                }
+            }
+        }
+    }
+    
+    return newState;
 };
 
 export const moveOneStep = (state: GameState): GameState => {

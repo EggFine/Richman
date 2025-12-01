@@ -19,7 +19,7 @@ import {
     checkNextDay, buyStock, sellStock, buyLottery,
     sellProperty, mortgageProperty, redeemProperty,
     clearEffects, resolveDebtCrisis, applyCardEffect,
-    aiAutoRedeemProperties
+    aiAutoRedeemProperties, aiTradeStocks
 } from './game/logic';
 import type { GameState } from './game/types';
 import { useI18n, languageFlags, languageNames } from './i18n';
@@ -156,8 +156,13 @@ function App() {
   useEffect(() => {
     if (isAiTurn && !gameState.isGameOver && !gameState.waitingForAction && gameState.diceValue === null && !gameState.modalMessage && !gameState.activeModal && !isMoving) {
       const timer = setTimeout(() => {
-        // AI 回合开始前，先检查是否要赎回抵押地产
-        setGameState(prev => aiAutoRedeemProperties(prev, prev.players[prev.currentPlayerIndex].id));
+        // AI 回合开始前，先进行股票交易，再检查是否要赎回抵押地产
+        setGameState(prev => {
+          const playerId = prev.players[prev.currentPlayerIndex].id;
+          let newState = aiTradeStocks(prev, playerId);  // AI 炒股
+          newState = aiAutoRedeemProperties(newState, playerId);  // 赎回抵押
+          return newState;
+        });
         handleRoll();
       }, 1000);
       return () => clearTimeout(timer);
