@@ -113,7 +113,7 @@ const CardRevealModal = ({ isOpen, activeCard, playerName, onClose }: CardReveal
 
   // 卡背 (保持神秘感)
   const CardBack = () => (
-    <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${isFate ? 'from-purple-900 to-indigo-900' : 'from-orange-700 to-red-900'} border-4 border-white/20 flex flex-col items-center justify-center overflow-hidden shadow-2xl`}>
+    <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${isFate ? 'from-purple-900 to-indigo-900' : 'from-orange-700 to-red-900'} border-4 border-white/20 flex flex-col items-center justify-center overflow-hidden shadow-2xl`} style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(0deg) translateZ(1px)' }}>
       <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/20 to-transparent" />
       <motion.div 
         animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
@@ -130,7 +130,7 @@ const CardRevealModal = ({ isOpen, activeCard, playerName, onClose }: CardReveal
 
   // 卡正面 (根据主题变化)
   const CardFront = () => (
-    <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${theme.bg} border-4 ${theme.border} overflow-hidden flex flex-col`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+    <div className={`absolute inset-0 rounded-3xl bg-gradient-to-br ${theme.bg} border-4 ${theme.border} overflow-hidden flex flex-col`} style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden', transform: 'rotateY(180deg) translateZ(1px)' }}>
       
       {/* 旋转光效背景 (仅好运) */}
       {card.isGood && (
