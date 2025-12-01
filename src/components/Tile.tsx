@@ -91,6 +91,22 @@ const Tile: React.FC<TileProps> = ({ tile, players }) => {
         )}
       </div>
 
+      {/* Mortgage Overlay */}
+      {tile.isMortgaged && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/40 backdrop-grayscale">
+            <div className={clsx(
+                "border-2 px-1 sm:px-2 py-0.5 rounded text-[8px] sm:text-xs font-bold transform -rotate-12 shadow-xl backdrop-blur-sm flex flex-col items-center leading-none gap-0.5",
+                tile.ownerId?.endsWith('0') 
+                    ? "border-blue-300 bg-blue-900/90 text-blue-50" 
+                    : "border-red-300 bg-red-900/90 text-red-50"
+            )}>
+                <span>抵押</span>
+                <span className="text-[6px] sm:text-[8px] opacity-90 font-medium">
+                    {tile.ownerId?.endsWith('0') ? '我' : 'AI'}
+                </span>
+            </div>
+        </div>
+      )}
 
       {/* Players - Improved Visibility */}
       <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 flex flex-col-reverse items-end gap-0.5 sm:gap-1 z-30 pointer-events-none p-1 sm:p-2">
