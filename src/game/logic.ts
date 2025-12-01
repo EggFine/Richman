@@ -330,6 +330,46 @@ export const redeemProperty = (state: GameState, tileId: number, playerId: strin
     return newState;
 };
 
+// AI 自动赎回抵押地产
+// 策略：当 AI 有足够的钱（保留一定周转资金后），按租金收益从高到低赎回地产
+export const aiAutoRedeemProperties = (state: GameState, playerId: string): GameState => {
+    let newState = { ...state };
+    const playerIndex = newState.players.findIndex(p => p.id === playerId);
+    const player = newState.players[playerIndex];
+    
+    // 不是AI或已破产则跳过
+    if (!player.isAi || player.isBankrupt) return newState;
+    
+    // 找出该AI拥有的所有已抵押地产
+    const mortgagedProperties = newState.tiles.filter(
+        t => t.ownerId === playerId && t.isMortgaged
+    );
+    
+    if (mortgagedProperties.length === 0) return newState;
+    
+    // 按照租金收益从高到低排序（优先赎回高收益地产）
+    const sortedProperties = [...mortgagedProperties].sort((a, b) => {
+        const rentA = (a.baseRent || 0) * Math.pow(2, a.level || 0);
+        const rentB = (b.baseRent || 0) * Math.pow(2, b.level || 0);
+        return rentB - rentA;
+    });
+    
+    // 保留周转资金：至少保留 $2000 或当前资金的 30%，取较大值
+    const reserveMoney = Math.max(2000, player.money * 0.3);
+    
+    for (const tile of sortedProperties) {
+        const redeemCost = Math.floor((tile.price || 0) * 0.6);
+        const currentPlayer = newState.players[playerIndex];
+        
+        // 只有当赎回后仍有足够周转资金时才赎回
+        if (currentPlayer.money - redeemCost >= reserveMoney) {
+            newState = redeemProperty(newState, tile.id, playerId);
+        }
+    }
+    
+    return newState;
+};
+
 // --- Stock & Move ---
 
 export const buyStock = (state: GameState, playerId: string, companyId: string, shares: number): GameState => {
