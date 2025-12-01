@@ -8,7 +8,7 @@ import {
 import { clsx } from 'clsx';
 import { useI18n } from '../i18n';
 
-const LogItem: React.FC<{ text: string, index: number }> = ({ text, index }) => {
+const LogItem: React.FC<{ text: string }> = ({ text }) => {
     const { language } = useI18n();
     
     // Parse log content for styling
@@ -98,7 +98,7 @@ const GameLog: React.FC<{ logs: string[] }> = ({ logs }) => {
             
             <div className="pt-8 pb-2">
                 {logs.map((log, i) => (
-                    <LogItem key={i} text={log} index={i} />
+                    <LogItem key={i} text={log} />
                 ))}
                 <div ref={bottomRef} />
             </div>

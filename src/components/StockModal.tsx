@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Activity } from 'lucide-react';
-import { AreaChart, Area, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer, Tooltip, CartesianGrid } from 'recharts';
 import type { Player, Company } from '../game/types';
 import { clsx } from 'clsx';
 import { useTranslation } from '../i18n';
