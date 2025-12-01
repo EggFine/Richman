@@ -49,7 +49,7 @@ function App() {
     
     setTimeout(() => {
       setGameState(prev => {
-        let nextState = checkNextDay(prev); 
+        const nextState = checkNextDay(prev); 
         const nextIndex = (prev.currentPlayerIndex + 1) % prev.players.length;
         
         return {
@@ -63,16 +63,6 @@ function App() {
       });
     }, 1500);
   }, [gameState.isGameOver]);
-
-  // AI Turn Logic
-  useEffect(() => {
-    if (isAiTurn && !gameState.isGameOver && !gameState.waitingForAction && gameState.diceValue === null && !gameState.modalMessage && !gameState.activeModal && !isMoving) {
-      const timer = setTimeout(() => {
-        handleRoll();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [isAiTurn, gameState.isGameOver, gameState.waitingForAction, gameState.diceValue, gameState.modalMessage, gameState.activeModal, isMoving]);
 
   // Turn End Check
   useEffect(() => {
@@ -91,8 +81,45 @@ function App() {
 
   // --- Main Action Loop ---
 
-  const handleRoll = async () => {
+  const handleRoll = useCallback(async () => {
     if (isMoving) return;
+
+    const current = gameState.players[gameState.currentPlayerIndex];
+    const needsJailSkip = current.jailTurns > 0;
+    const needsRestSkip = (current.restTurns || 0) > 0;
+
+    if (needsJailSkip || needsRestSkip) {
+      setIsMoving(true);
+      setGameState(prev => {
+        const players = [...prev.players];
+        const player = { ...players[prev.currentPlayerIndex] };
+        
+        if (needsJailSkip) {
+          player.jailTurns = Math.max(0, player.jailTurns - 1);
+        } else {
+          player.restTurns = Math.max(0, (player.restTurns || 0) - 1);
+        }
+        
+        players[prev.currentPlayerIndex] = player;
+        const message = needsJailSkip
+          ? `🔒 ${player.name} 仍在坐牢, 剩余 ${player.jailTurns} 回合.`
+          : player.restTurns > 0
+              ? `☕ ${player.name} 继续在免费停车休息, 剩余 ${player.restTurns} 回合.`
+              : `☕ ${player.name} 结束休息, 准备继续出发!`;
+        
+        return {
+          ...prev,
+          players,
+          gameLog: [...prev.gameLog, message],
+          waitingForAction: false,
+          diceValue: null
+        };
+      });
+      endTurn();
+      setTimeout(() => setIsMoving(false), 1600);
+      return;
+    }
+
     setIsMoving(true);
 
     const dice = rollDice(); // 返回两个骰子的值 [dice1, dice2]
@@ -120,7 +147,17 @@ function App() {
     });
 
     setIsMoving(false);
-  };
+  }, [endTurn, gameState, isMoving]);
+
+  // AI Turn Logic
+  useEffect(() => {
+    if (isAiTurn && !gameState.isGameOver && !gameState.waitingForAction && gameState.diceValue === null && !gameState.modalMessage && !gameState.activeModal && !isMoving) {
+      const timer = setTimeout(() => {
+        handleRoll();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isAiTurn, gameState.isGameOver, gameState.waitingForAction, gameState.diceValue, gameState.modalMessage, gameState.activeModal, isMoving, handleRoll]);
 
   // --- UI Actions ---
 

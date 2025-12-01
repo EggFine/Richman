@@ -15,6 +15,13 @@ export const getInitialState = (): GameState => {
       // 兼容旧存档
       if (!state.activeCard) state.activeCard = null;
       if (!state.jailFreeCards) state.jailFreeCards = {};
+      if (Array.isArray(state.players)) {
+        state.players = state.players.map((player: Player) => ({
+            ...player,
+            lotteryTickets: player.lotteryTickets || [],
+            restTurns: player.restTurns ?? 0,
+        }));
+      }
       return state;
     } catch (e) {
       console.error("Failed to load save", e);
@@ -33,6 +40,7 @@ export const createNewGame = (playerNames: string[]): GameState => {
     isAi: index > 0,
     isBankrupt: false,
     jailTurns: 0,
+    restTurns: 0,
     portfolio: {},
     lotteryTickets: [],
   }));
@@ -182,9 +190,9 @@ const processLotteryDraw = (state: GameState): GameState => {
     newState.gameLog = [...newState.gameLog, `🎰 大乐透开奖! 中奖号码: [${winningNumbers.join(', ')}]`];
     
     let hasJackpotWinner = false;
-        
-    newState.players = newState.players.map(p => {
-        // 创建新的玩家对象，保证不可变性
+    const effectsQueue: Array<{ amount: number; position: number }> = [];
+    
+    const updatedPlayers = newState.players.map(p => {
         const newPlayer = { ...p, lotteryTickets: [] as LotteryTicket[] };
         let playerPrize = 0;
         let bestMatch = 0;
@@ -193,23 +201,19 @@ const processLotteryDraw = (state: GameState): GameState => {
             const matches = countMatches(ticket.numbers, winningNumbers);
             if (matches > bestMatch) bestMatch = matches;
             
-            // 奖金计算：
-            // 1个号码匹配: 返还票价
-            // 2个号码匹配: 5倍奖金
-            // 3个号码全中: 瓜分奖池
             if (matches === 1) {
-                playerPrize += ticket.cost; // 返还票价
+                playerPrize += ticket.cost;
             } else if (matches === 2) {
-                playerPrize += ticket.cost * 5; // 5倍奖金
+                playerPrize += ticket.cost * 5;
             } else if (matches === 3) {
                 hasJackpotWinner = true;
-                playerPrize += newState.lotteryJackpot; // 全中获得奖池
+                playerPrize += newState.lotteryJackpot;
             }
         });
         
         if (playerPrize > 0) {
             newPlayer.money += playerPrize;
-            newState = addMoneyEffect(newState, playerPrize, newPlayer.position);
+            effectsQueue.push({ amount: playerPrize, position: newPlayer.position });
             
             if (bestMatch === 3) {
                 newState.gameLog = [...newState.gameLog, `🎊 ${newPlayer.name} 全中大奖! 赢得 $${playerPrize}!`];
@@ -231,11 +235,17 @@ const processLotteryDraw = (state: GameState): GameState => {
         return newPlayer;
     });
     
-    // 更新奖池
+    newState.players = updatedPlayers;
+    
+    // 奖金飘字效果在玩家列表更新后统一应用，避免覆盖变更
+    effectsQueue.forEach(effect => {
+        newState = addMoneyEffect(newState, effect.amount, effect.position);
+    });
+    
     if (hasJackpotWinner) {
-        newState.lotteryJackpot = 5000; // 重置奖池
+        newState.lotteryJackpot = 5000;
     } else {
-        newState.lotteryJackpot += 3000; // 无人全中，奖池滚存
+        newState.lotteryJackpot += 3000;
         newState.gameLog = [...newState.gameLog, `💰 奖池滚存至 $${newState.lotteryJackpot}`];
     }
     
@@ -519,7 +529,10 @@ export const handleLanding = (state: GameState): { newState: GameState, turnEnde
       newState.gameLog = [...newState.gameLog, `🏁 ${player.name} 正好停在起点.`];
   }
   if (tile.type === 'CORNER') {
-      newState.gameLog = [...newState.gameLog, `☕ ${player.name} 在免费停车处休息.`];
+      player.restTurns = 1;
+      newState.players[playerIdx] = player;
+      newState.gameLog = [...newState.gameLog, `☕ ${player.name} 在免费停车处休息，下一回合暂停行动.`];
+      return { newState, turnEnded: true };
   }
   return { newState, turnEnded: true };
 };
@@ -631,7 +644,9 @@ const autoLiquidateAssets = (state: GameState, debtorIdx: number, creditorIdx: n
         }
         
         // 检查是否还有资产可以变现
-        if (!hasAssetsToLiquidate(newState, debtorId)) {
+        const hasLiquidAssets = hasAssetsToLiquidate(newState, debtorId);
+        const ownsAnyProperty = newState.tiles.some(t => t.ownerId === debtorId);
+        if (!hasLiquidAssets && !ownsAnyProperty) {
             break;
         }
         

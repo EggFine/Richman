@@ -12,11 +12,15 @@ interface CardRevealModalProps {
 const CardRevealModal = ({ isOpen, activeCard, playerName, onClose }: CardRevealModalProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [showContent, setShowContent] = useState(false);
+  const [sparklePositions, setSparklePositions] = useState<Array<{ left: number; top: number }>>([]);
+  const [particleTargets, setParticleTargets] = useState<Array<{ x: number; y: number }>>([]);
 
   useEffect(() => {
     if (isOpen) {
-      setIsFlipped(false);
-      setShowContent(false);
+      const resetTimer = setTimeout(() => {
+        setIsFlipped(false);
+        setShowContent(false);
+      }, 0);
       // 延迟翻转卡牌
       const flipTimer = setTimeout(() => {
         setIsFlipped(true);
@@ -26,11 +30,32 @@ const CardRevealModal = ({ isOpen, activeCard, playerName, onClose }: CardReveal
         setShowContent(true);
       }, 1100);
       return () => {
+        clearTimeout(resetTimer);
         clearTimeout(flipTimer);
         clearTimeout(contentTimer);
       };
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!activeCard) {
+        setSparklePositions([]);
+        setParticleTargets([]);
+      } else {
+        setSparklePositions(Array.from({ length: 8 }, () => ({
+          left: 20 + Math.random() * 60,
+          top: 20 + Math.random() * 60,
+        })));
+        setParticleTargets(Array.from({ length: 20 }, () => ({
+          x: Math.random() * 100,
+          y: Math.random() * 100,
+        })));
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [activeCard]);
 
   if (!activeCard) return null;
 
@@ -82,13 +107,13 @@ const CardRevealModal = ({ isOpen, activeCard, playerName, onClose }: CardReveal
         {isFate ? '命运' : '机会'}
       </div>
       {/* 闪烁粒子 */}
-      {[...Array(8)].map((_, i) => (
+      {sparklePositions.map((pos, i) => (
         <motion.div
           key={i}
           className={`absolute w-2 h-2 rounded-full ${isFate ? 'bg-purple-300' : 'bg-amber-300'}`}
           style={{
-            left: `${20 + Math.random() * 60}%`,
-            top: `${20 + Math.random() * 60}%`,
+            left: `${pos.left}%`,
+            top: `${pos.top}%`,
           }}
           animate={{
             opacity: [0.3, 1, 0.3],
@@ -196,7 +221,7 @@ const CardRevealModal = ({ isOpen, activeCard, playerName, onClose }: CardReveal
           onClick={onClose}
         >
           {/* 背景粒子效果 */}
-          {[...Array(20)].map((_, i) => (
+          {particleTargets.map((target, i) => (
             <motion.div
               key={i}
               className={`absolute w-3 h-3 rounded-full ${card.isGood ? 'bg-yellow-400' : 'bg-red-500'}`}
@@ -206,8 +231,8 @@ const CardRevealModal = ({ isOpen, activeCard, playerName, onClose }: CardReveal
                 opacity: 0,
               }}
               animate={{
-                x: `${Math.random() * 100}%`,
-                y: `${Math.random() * 100}%`,
+                x: `${target.x}%`,
+                y: `${target.y}%`,
                 opacity: [0, 0.8, 0],
               }}
               transition={{
@@ -271,5 +296,6 @@ const CardRevealModal = ({ isOpen, activeCard, playerName, onClose }: CardReveal
 };
 
 export default CardRevealModal;
+
 
 

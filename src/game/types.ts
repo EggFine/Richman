@@ -96,6 +96,7 @@ export interface Player {
   isAi: boolean;
   isBankrupt: boolean;
   jailTurns: number;
+  restTurns: number; // 免费停车休息剩余回合
   portfolio: Record<string, number>;
   lotteryTickets: LotteryTicket[];  // 改为彩票数组
 }

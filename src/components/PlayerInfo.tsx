@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Player } from '../game/types';
 import { clsx } from 'clsx';
-import { User, Bot, TrendingUp, Ticket, Lock } from 'lucide-react';
+import { User, Bot, TrendingUp, Ticket, Lock, Coffee } from 'lucide-react';
 
 const PlayerInfo: React.FC<{ player: Player, isCurrent: boolean }> = ({ player, isCurrent }) => {
   return (
@@ -43,6 +43,11 @@ const PlayerInfo: React.FC<{ player: Player, isCurrent: boolean }> = ({ player, 
           {player.jailTurns > 0 && (
             <span className="bg-gray-800 text-white px-1 sm:px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                 <Lock className="w-2 h-2 sm:w-2.5 sm:h-2.5" /> 坐牢({player.jailTurns})
+            </span>
+          )}
+          {player.restTurns > 0 && (
+            <span className="bg-amber-200 text-amber-800 px-1 sm:px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                <Coffee className="w-2 h-2 sm:w-2.5 sm:h-2.5" /> 休息({player.restTurns})
             </span>
           )}
       </div>
