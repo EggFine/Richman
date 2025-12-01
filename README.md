@@ -2,7 +2,7 @@
   <img src="https://img.icons8.com/color/96/rich.png" alt="Richman Logo" width="96" height="96"/>
 </p>
 
-<h1 align="center">🎲 RICHMAN v4</h1>
+<h1 align="center">🎲 RICHMAN v5</h1>
 
 <p align="center">
   <strong>A Modern Web-Based Monopoly-Style Board Game</strong>
@@ -25,7 +25,7 @@
 
 ## ✨ Overview
 
-**RICHMAN v4** is a beautifully crafted, feature-rich Monopoly-style board game built with modern web technologies. Experience the classic real estate trading gameplay with Chinese cities, complete with a dynamic stock market, lottery system, fate & chance cards, and stunning visual effects.
+**RICHMAN v5** is a beautifully crafted, feature-rich Monopoly-style board game built with modern web technologies. Experience the classic real estate trading gameplay with Chinese cities, complete with a dynamic stock market, lottery system, fate & chance cards, and stunning visual effects.
 
 <p align="center">
   <em>Roll the dice, buy properties, bankrupt your opponents, and become the ultimate tycoon!</em>
@@ -87,10 +87,27 @@ Trade shares in 6 simulated Chinese companies with realistic price volatility:
 | 📊 Stock | Dividends, market crashes |
 | 🎊 Lottery | Jackpot boosts |
 
+**New in v5:**
+- Beautiful card reveal animation with flip effect
+- Random teleportation with dynamic destination
+- Get Out of Jail Free cards (collectible and reusable)
+
 ### 🤖 AI Opponent
 - Smart AI that makes strategic decisions
 - Automatic property purchases and upgrades
 - Intelligent asset liquidation during debt crises
+
+**New in v5: Smart Stock Trading AI**
+- Trend analysis using moving averages
+- Take-profit strategy (sell at 15%+ gain)
+- Stop-loss protection (sell at 20% loss)
+- Portfolio diversification (max 30% per stock)
+- Auto-redeem mortgaged properties when profitable
+
+### 🌍 Internationalization (i18n)
+- **Full bilingual support**: English & Chinese
+- One-click language toggle
+- All UI elements and game logs translated
 
 ### 💫 Visual Effects
 - **Floating text** for money transactions
@@ -203,10 +220,15 @@ Be the last player standing by bankrupting your opponent through strategic prope
 | 🏁 Start | Collect $2,000 salary when passing |
 | 🔒 Jail | Visit only (no penalty) |
 | 🚔 Go to Jail | Sent to jail for 2 turns |
-| ☕ Free Parking | Rest (no effect) |
+| ☕ Free Parking | **Rest for 1 turn** (new in v5) |
 | 🟣 Fate | Draw a Fate card |
 | 🟠 Chance | Draw a Chance card |
 | 🎰 Lottery | Purchase lottery tickets |
+
+### Get Out of Jail Free Cards (New in v5)
+- Obtained from Fate or Chance cards
+- Can be saved and used when sent to jail
+- Immediately releases player without waiting
 
 ### Bankruptcy
 When money goes negative:
@@ -219,6 +241,26 @@ When money goes negative:
 ## 🎨 Screenshots
 
 > *The game features a sleek dark theme with vibrant accent colors, responsive layout, and polished UI components.*
+
+---
+
+## 📋 Changelog
+
+### v5.0 (Latest)
+- ✅ **Fate & Chance Card System** - 36 unique cards with beautiful reveal animations
+- ✅ **Get Out of Jail Free Cards** - Collectible cards to escape jail
+- ✅ **Smart AI Stock Trading** - Trend analysis, take-profit, stop-loss strategies
+- ✅ **Free Parking Rest Mechanic** - Skip one turn when landing on corner
+- ✅ **Internationalization (i18n)** - Full English & Chinese support
+- ✅ **Random Teleportation** - Dynamic destination for teleport cards
+- ✅ **AI Auto-Redeem** - AI intelligently redeems mortgaged properties
+
+### v4.0
+- Property system with 5 upgrade levels
+- Stock market with 6 companies
+- Lottery system with jackpot rollover
+- Debt crisis management
+- Visual effects (money shower, floating text)
 
 ---
 

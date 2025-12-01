@@ -51,6 +51,8 @@ export const zh: Translations = {
     bankrupt: '破产',
     jail: '坐牢',
     rest: '休息',
+    jailFreeCards: '出狱卡',
+    useJailCard: '🗝️ 使用出狱卡',
   },
 
   // === 股票市场 ===

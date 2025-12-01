@@ -7,6 +7,7 @@ export type TileType =
 export type CardEffectType = 
   | 'MONEY'           // 获得/失去金钱
   | 'MOVE_TO'         // 传送到指定位置
+  | 'MOVE_TO_RANDOM'  // 传送到随机位置（抽卡时确定）
   | 'MOVE_STEPS'      // 前进/后退若干步
   | 'GO_TO_JAIL'      // 入狱
   | 'GET_OUT_OF_JAIL' // 出狱卡
@@ -104,7 +105,7 @@ export interface Player {
 // 资金危机状态 - 当玩家资金不足但有资产时触发
 export interface DebtCrisis {
   debtorId: string;      // 欠债玩家ID
-  creditorId: string;    // 债权人玩家ID
+  creditorId: string | null;    // 债权人玩家ID，null表示对银行/系统的债务
   amount: number;        // 需要偿还的金额（正数）
 }
 

@@ -53,6 +53,8 @@ export interface Translations {
     bankrupt: string;
     jail: string;
     rest: string;
+    jailFreeCards: string;
+    useJailCard: string;
   };
 
   // === 股票市场 ===

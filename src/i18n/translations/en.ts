@@ -51,6 +51,8 @@ export const en: Translations = {
     bankrupt: 'BANKRUPT',
     jail: 'JAIL',
     rest: 'Zzz',
+    jailFreeCards: 'Jail Free',
+    useJailCard: '🗝️ Use Jail Free Card',
   },
 
   // === Stock Market ===

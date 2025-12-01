@@ -12,17 +12,19 @@ interface ControlsProps {
   onOpenStock: () => void;
   onOpenLottery: () => void;
   onReset: () => void;
+  onUseJailCard?: () => void;
   canRoll: boolean;
   canBuy: boolean;
   canUpgrade: boolean;
   canPass: boolean;
+  canUseJailCard?: boolean;
   diceValue: number[] | null;
 }
 
 const Controls: React.FC<ControlsProps> = ({ 
   onRoll, onBuy, onPass, onUpgrade, 
-  onOpenStock, onOpenLottery, onReset,
-  canRoll, canBuy, canUpgrade, canPass, 
+  onOpenStock, onOpenLottery, onReset, onUseJailCard,
+  canRoll, canBuy, canUpgrade, canPass, canUseJailCard,
   diceValue 
 }) => {
   const t = useTranslation();
@@ -84,6 +86,16 @@ const Controls: React.FC<ControlsProps> = ({
       </div>
 
       <div className="grid grid-cols-2 gap-2 w-full">
+        {canUseJailCard && onUseJailCard && (
+          <motion.button 
+            initial={{ y: 10, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }} 
+            onClick={onUseJailCard} 
+            className="col-span-2 py-2.5 sm:py-3 bg-amber-500 shadow-[0_3px_0_rgb(180,83,9)] text-white rounded-xl sm:rounded-xl font-bold hover:bg-amber-400 active:shadow-none active:translate-y-[3px] transition-all text-sm sm:text-base flex items-center justify-center gap-2"
+          >
+            {t.playerInfo.useJailCard}
+          </motion.button>
+        )}
         {canBuy && (
           <motion.button initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} onClick={onBuy} className="col-span-2 py-2.5 sm:py-3 bg-green-500 shadow-[0_3px_0_rgb(21,128,61)] text-white rounded-xl sm:rounded-xl font-bold hover:bg-green-400 active:shadow-none active:translate-y-[3px] transition-all text-sm sm:text-base flex items-center justify-center gap-2">
             {t.controls.buyProperty}

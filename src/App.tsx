@@ -19,7 +19,7 @@ import {
     checkNextDay, buyStock, sellStock, buyLottery,
     sellProperty, mortgageProperty, redeemProperty,
     clearEffects, resolveDebtCrisis, applyCardEffect,
-    aiAutoRedeemProperties, aiTradeStocks
+    aiAutoRedeemProperties, aiTradeStocks, applyJailFreeCard
 } from './game/logic';
 import type { GameState } from './game/types';
 import { useI18n, languageFlags, languageNames } from './i18n';
@@ -33,6 +33,7 @@ function App() {
   const [isMoving, setIsMoving] = useState(false); // Block inputs during move animation
 
   const currentPlayer = gameState.players[gameState.currentPlayerIndex];
+  const humanPlayer = gameState.players[0]; // 人类玩家始终是第一个
   const isAiTurn = currentPlayer.isAi;
 
   // Persistence & Effect Cleanup
@@ -159,7 +160,15 @@ function App() {
         // AI 回合开始前，先进行股票交易，再检查是否要赎回抵押地产
         setGameState(prev => {
           const playerId = prev.players[prev.currentPlayerIndex].id;
-          let newState = aiTradeStocks(prev, playerId);  // AI 炒股
+          const aiPlayer = prev.players[prev.currentPlayerIndex];
+          let newState = prev;
+          
+          // AI 在监狱且有出狱卡时自动使用
+          if (aiPlayer.jailTurns > 0 && (prev.jailFreeCards[playerId] || 0) > 0) {
+            newState = applyJailFreeCard(newState, playerId);
+          }
+          
+          newState = aiTradeStocks(newState, playerId);  // AI 炒股
           newState = aiAutoRedeemProperties(newState, playerId);  // 赎回抵押
           return newState;
         });
@@ -174,6 +183,7 @@ function App() {
   const onBuy = () => setGameState(prev => buyProperty(prev, prev.currentPlayerIndex).newState);
   const onUpgrade = () => setGameState(prev => upgradeProperty(prev, prev.currentPlayerIndex).newState);
   const onPass = () => setGameState(prev => skipAction(prev));
+  const onUseJailCard = () => setGameState(prev => applyJailFreeCard(prev, currentPlayer.id));
   
   const onReset = () => {
       if (confirm(t.app.confirmReset)) {
@@ -189,7 +199,7 @@ function App() {
   const handleSellStock = (companyId: string, amount: number) => setGameState(prev => sellStock(prev, currentPlayer.id, companyId, amount));
   const handleBuyLottery = (numbers: number[]) => setGameState(prev => buyLottery(prev, currentPlayer.id, numbers));
   
-  // 出售房产时，检查是否需要解决债务危机
+  // 出售房产（当前玩家，用于债务危机）
   const onSellPropertyHandler = (id: number) => {
     setGameState(prev => {
       let newState = sellProperty(prev, id, currentPlayer.id);
@@ -201,7 +211,7 @@ function App() {
     });
   };
   
-  // 抵押房产时，检查是否需要解决债务危机
+  // 抵押房产（当前玩家，用于债务危机）
   const handleMortgageProperty = (id: number) => {
     setGameState(prev => {
       let newState = mortgageProperty(prev, id, currentPlayer.id);
@@ -213,7 +223,10 @@ function App() {
     });
   };
   
-  const handleRedeemProperty = (id: number) => setGameState(prev => redeemProperty(prev, id, currentPlayer.id));
+  // 人类玩家的资产管理函数（"我的资产"按钮使用）
+  const onHumanSellProperty = (id: number) => setGameState(prev => sellProperty(prev, id, humanPlayer.id));
+  const onHumanMortgageProperty = (id: number) => setGameState(prev => mortgageProperty(prev, id, humanPlayer.id));
+  const onHumanRedeemProperty = (id: number) => setGameState(prev => redeemProperty(prev, id, humanPlayer.id));
   
   // 危机模式下卖出股票
   const handleCrisisSellStock = (companyId: string, shares: number) => {
@@ -262,6 +275,8 @@ function App() {
   const canUpgrade = gameState.waitingForAction && !currentPlayer.isAi && currentTile.type === 'PROPERTY' && currentTile.ownerId === currentPlayer.id && canAfford && (currentTile.level ?? 0) < 5 && !currentTile.isMortgaged;
   const canPass = gameState.waitingForAction && !currentPlayer.isAi;
   const canRoll = !isAiTurn && !gameState.waitingForAction && gameState.diceValue === null && !gameState.isGameOver && !gameState.activeModal && !isMoving;
+  // 可以使用出狱卡：玩家在监狱中且有出狱卡
+  const canUseJailCard = !isAiTurn && currentPlayer.jailTurns > 0 && (gameState.jailFreeCards[currentPlayer.id] || 0) > 0 && gameState.diceValue === null && !gameState.isGameOver && !gameState.activeModal && !isMoving;
 
   const showStock = gameState.activeModal === 'STOCK';
   const showLottery = gameState.activeModal === 'LOTTERY';
@@ -331,10 +346,12 @@ function App() {
                   onOpenStock={() => setGameState(prev => ({...prev, activeModal: 'STOCK'}))}
                   onOpenLottery={() => setGameState(prev => ({...prev, activeModal: 'LOTTERY'}))}
                   onReset={onReset}
+                  onUseJailCard={onUseJailCard}
                   canRoll={canRoll}
                   canBuy={canBuy}
                   canUpgrade={canUpgrade}
                   canPass={canPass}
+                  canUseJailCard={canUseJailCard}
                   diceValue={gameState.diceValue}
                />
 
@@ -441,11 +458,11 @@ function App() {
       <AssetsModal
         isOpen={showAssets}
         onClose={closeModal}
-        player={currentPlayer}
+        player={humanPlayer}
         tiles={gameState.tiles}
-        onSell={onSellPropertyHandler}
-        onMortgage={handleMortgageProperty}
-        onRedeem={handleRedeemProperty}
+        onSell={onHumanSellProperty}
+        onMortgage={onHumanMortgageProperty}
+        onRedeem={onHumanRedeemProperty}
       />
 
       <DebtCrisisModal

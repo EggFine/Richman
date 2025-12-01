@@ -3,6 +3,9 @@ import { BOARD_SIZE, INITIAL_MONEY, INITIAL_TILES, INITIAL_COMPANIES } from './c
 import { drawFateCard, drawChanceCard } from './cards';
 
 const generateId = () => Math.random().toString(36).substr(2, 9);
+
+// 动态查找监狱位置，避免硬编码
+const JAIL_POSITION = INITIAL_TILES.findIndex(t => t.type === 'JAIL');
 const STORAGE_KEY = 'richman_save_v4';
 
 export const getInitialState = (): GameState => {
@@ -262,16 +265,18 @@ export const sellProperty = (state: GameState, tileId: number, playerId: string)
     const player = { ...newState.players[playerIndex] };
 
     if (tile.ownerId === playerId) {
-        // Sell Price: 80% of (Land Price + Upgrade Cost implicitly via logic or just simplified)
-        // Simplified: 80% of land price + 50% of upgrade levels? 
-        // Let's stick to simple: 80% of current face value (Price).
-        // But Price is static base price.
-        // Let's calculate Value = Price + (Level * Price)
+        // 计算房产价值 = 基础价格 * (1 + 等级)
         const value = (tile.price || 0) * (1 + (tile.level || 0));
-        const sellPrice = Math.floor(value * 0.8);
+        let sellPrice = Math.floor(value * 0.8);
+        
+        // 如果房产已抵押，需要扣除赎回成本（60%基础价格）
+        if (tile.isMortgaged) {
+            const redeemCost = Math.floor((tile.price || 0) * 0.6);
+            sellPrice = Math.max(0, sellPrice - redeemCost);
+        }
         
         player.money += sellPrice;
-        newState = addMoneyEffect(newState, sellPrice, player.position); // Float over player
+        newState = addMoneyEffect(newState, sellPrice, player.position);
         
         tile.ownerId = null;
         tile.level = 0;
@@ -348,9 +353,10 @@ export const aiAutoRedeemProperties = (state: GameState, playerId: string): Game
     if (mortgagedProperties.length === 0) return newState;
     
     // 按照租金收益从高到低排序（优先赎回高收益地产）
+    // 使用与 calculateRent 一致的公式：baseRent * 3^level
     const sortedProperties = [...mortgagedProperties].sort((a, b) => {
-        const rentA = (a.baseRent || 0) * Math.pow(2, a.level || 0);
-        const rentB = (b.baseRent || 0) * Math.pow(2, b.level || 0);
+        const rentA = (a.baseRent || 0) * Math.pow(3, a.level || 0);
+        const rentB = (b.baseRent || 0) * Math.pow(3, b.level || 0);
         return rentB - rentA;
     });
     
@@ -581,12 +587,8 @@ export const handleLanding = (state: GameState): { newState: GameState, turnEnde
   const player = { ...newState.players[playerIdx] };
   const tile = { ...newState.tiles[player.position] };
 
-  if (player.jailTurns > 0) {
-      player.jailTurns--;
-      newState.gameLog = [...newState.gameLog, `🔒 ${player.name} 正在坐牢, 剩余 ${player.jailTurns} 回合.`];
-      newState.players[playerIdx] = player;
-      return { newState, turnEnded: true };
-  }
+  // 注意：监狱/休息检查已在 App.tsx 的 handleRoll 中处理
+  // 此处不再需要重复检查 jailTurns
 
   if (tile.type === 'PROPERTY') {
       if (!tile.ownerId) {
@@ -640,7 +642,7 @@ export const handleLanding = (state: GameState): { newState: GameState, turnEnde
       return { newState, turnEnded: true };
   }
   if (tile.type === 'TO_JAIL') {
-      player.position = 7; 
+      player.position = JAIL_POSITION; 
       player.jailTurns = 2;
       newState.gameLog = [...newState.gameLog, `🚔 ${player.name} 被捕入狱! 暂停 2 回合.`];
       newState.players[playerIdx] = player;
@@ -693,33 +695,30 @@ export const calculatePotentialAssets = (state: GameState, playerId: string): nu
     const player = state.players.find(p => p.id === playerId);
     if (!player) return 0;
     
-    // 1. 计算可出售的房产价值（80%）
+    // 1. 计算所有房产的出售价值
     const propertyValue = state.tiles
         .filter(t => t.ownerId === playerId)
         .reduce((sum, tile) => {
+            const baseValue = (tile.price || 0) * (1 + (tile.level || 0));
+            let sellPrice = Math.floor(baseValue * 0.8);
+            
+            // 如果已抵押，扣除赎回成本
             if (tile.isMortgaged) {
-                // 已抵押的房产不能再变现，跳过
-                return sum;
+                const redeemCost = Math.floor((tile.price || 0) * 0.6);
+                sellPrice = Math.max(0, sellPrice - redeemCost);
             }
-            const value = (tile.price || 0) * (1 + (tile.level || 0));
-            return sum + Math.floor(value * 0.8); // 出售价 80%
+            
+            return sum + sellPrice;
         }, 0);
     
-    // 2. 计算可抵押的房产价值（50%，仅未抵押的）
-    const mortgageValue = state.tiles
-        .filter(t => t.ownerId === playerId && !t.isMortgaged)
-        .reduce((sum, tile) => {
-            return sum + Math.floor((tile.price || 0) * 0.5);
-        }, 0);
-    
-    // 3. 计算股票市值
+    // 2. 计算股票市值
     const stockValue = state.companies.reduce((sum, company) => {
         const shares = player.portfolio[company.id] || 0;
         return sum + shares * company.price;
     }, 0);
     
-    // 返回房产出售价值 + 股票市值（取较高的变现方式）
-    return Math.max(propertyValue, mortgageValue) + stockValue;
+    // 返回房产出售价值 + 股票市值
+    return propertyValue + stockValue;
 };
 
 // 检查玩家是否有资产可以变现
@@ -727,8 +726,8 @@ export const hasAssetsToLiquidate = (state: GameState, playerId: string): boolea
     const player = state.players.find(p => p.id === playerId);
     if (!player) return false;
     
-    // 检查是否有房产
-    const hasProperties = state.tiles.some(t => t.ownerId === playerId && !t.isMortgaged);
+    // 检查是否有房产（包括已抵押的，因为可以出售）
+    const hasProperties = state.tiles.some(t => t.ownerId === playerId);
     
     // 检查是否有股票
     const hasStocks = Object.values(player.portfolio).some(shares => shares > 0);
@@ -769,6 +768,86 @@ const handleBankruptcy = (state: GameState, debtorIdx: number, creditorIdx: numb
             newState.winner = creditor.name;
         }
     }
+    return newState;
+};
+
+// AI 自动变卖资产（对银行债务）
+const autoLiquidateAssetsForBank = (state: GameState, debtorIdx: number): GameState => {
+    let newState = { ...state };
+    const debtorId = newState.players[debtorIdx].id;
+    
+    // 防止无限循环的安全计数器
+    let iterations = 0;
+    const maxIterations = 100;
+    
+    // 循环直到资金为正或无资产可卖
+    while (iterations < maxIterations) {
+        iterations++;
+        
+        const currentDebtor = newState.players[debtorIdx];
+        
+        // 检查是否已经脱离危机
+        if (currentDebtor.money >= 0) {
+            break;
+        }
+        
+        // 检查是否还有资产可以变现
+        const hasLiquidAssets = hasAssetsToLiquidate(newState, debtorId);
+        const ownsAnyProperty = newState.tiles.some(t => t.ownerId === debtorId);
+        if (!hasLiquidAssets && !ownsAnyProperty) {
+            break;
+        }
+        
+        let actionTaken = false;
+        
+        // 优先卖股票
+        for (const company of newState.companies) {
+            const shares = currentDebtor.portfolio[company.id] || 0;
+            if (shares > 0) {
+                newState = sellStock(newState, debtorId, company.id, shares);
+                actionTaken = true;
+                break;
+            }
+        }
+        
+        if (actionTaken) continue;
+        
+        // 如果还是负数，抵押房产
+        const propertyToMortgage = newState.tiles.find(t => t.ownerId === debtorId && !t.isMortgaged);
+        if (propertyToMortgage) {
+            newState = mortgageProperty(newState, propertyToMortgage.id, debtorId);
+            continue;
+        }
+        
+        // 如果没有可抵押的，卖房产
+        const propertyToSell = newState.tiles.find(t => t.ownerId === debtorId);
+        if (propertyToSell) {
+            newState = sellProperty(newState, propertyToSell.id, debtorId);
+            continue;
+        }
+        
+        break;
+    }
+    
+    // 清除危机状态
+    newState.debtCrisis = null;
+    newState.activeModal = null;
+    
+    // 检查最终是否还是破产
+    const finalDebtor = newState.players[debtorIdx];
+    if (finalDebtor.money < 0) {
+        const newDebtor = { ...finalDebtor, isBankrupt: true };
+        newState.players = [...newState.players];
+        newState.players[debtorIdx] = newDebtor;
+        newState.gameLog = [...newState.gameLog, `💀 ${finalDebtor.name} 破产了!`];
+        newState.isGameOver = true;
+        // 找到另一个玩家作为赢家
+        const winner = newState.players.find(p => !p.isBankrupt && p.id !== finalDebtor.id);
+        newState.winner = winner?.name || null;
+    } else {
+        newState.gameLog = [...newState.gameLog, `✅ ${finalDebtor.name} 成功变卖资产偿还了债务!`];
+    }
+    
     return newState;
 };
 
@@ -862,7 +941,6 @@ export const resolveDebtCrisis = (state: GameState): GameState => {
     
     const { debtorId, creditorId } = newState.debtCrisis;
     const debtorIdx = newState.players.findIndex(p => p.id === debtorId);
-    const creditorIdx = newState.players.findIndex(p => p.id === creditorId);
     const debtor = newState.players[debtorIdx];
     
     if (debtor.money >= 0) {
@@ -877,7 +955,16 @@ export const resolveDebtCrisis = (state: GameState): GameState => {
         newState.players[debtorIdx] = newDebtor;
         newState.gameLog = [...newState.gameLog, `💀 ${debtor.name} 无力偿还债务，破产了!`];
         newState.isGameOver = true;
-        newState.winner = newState.players[creditorIdx].name;
+        
+        // 如果有债权人，债权人获胜；否则找另一个玩家作为赢家
+        if (creditorId) {
+            const creditorIdx = newState.players.findIndex(p => p.id === creditorId);
+            newState.winner = newState.players[creditorIdx].name;
+        } else {
+            const winner = newState.players.find(p => !p.isBankrupt && p.id !== debtorId);
+            newState.winner = winner?.name || null;
+        }
+        
         newState.debtCrisis = null;
         newState.activeModal = null;
     }
@@ -944,6 +1031,7 @@ export const applyCardEffect = (state: GameState): GameState => {
     const playerIdx = newState.players.findIndex(p => p.id === playerId);
     const player = { ...newState.players[playerIdx] };
     const effect = card.effect;
+    let needsLanding = false; // 标记是否需要处理落地效果
     
     switch (effect.type) {
         case 'MONEY': {
@@ -972,6 +1060,7 @@ export const applyCardEffect = (state: GameState): GameState => {
             player.position = targetPos;
             const targetTile = newState.tiles[targetPos];
             newState.gameLog = [...newState.gameLog, `🚀 ${player.name} 被传送到 ${targetTile.name}`];
+            needsLanding = true; // 需要处理新位置的落地效果
             break;
         }
         
@@ -993,11 +1082,12 @@ export const applyCardEffect = (state: GameState): GameState => {
                     ? `🚶 ${player.name} 前进 ${steps} 步到 ${targetTile.name}`
                     : `🚶 ${player.name} 后退 ${Math.abs(steps)} 步到 ${targetTile.name}`
             ];
+            needsLanding = true; // 需要处理新位置的落地效果
             break;
         }
         
         case 'GO_TO_JAIL': {
-            player.position = 7; // 监狱位置
+            player.position = JAIL_POSITION;
             player.jailTurns = 2;
             newState.gameLog = [...newState.gameLog, `🚔 ${player.name} 被送进监狱! 暂停 2 回合`];
             break;
@@ -1033,33 +1123,39 @@ export const applyCardEffect = (state: GameState): GameState => {
         
         case 'COLLECT_FROM_EACH': {
             const amount = effect.value || 0;
-            const otherPlayers = newState.players.filter(p => p.id !== playerId && !p.isBankrupt);
-            const totalCollect = amount * otherPlayers.length;
+            let actualCollected = 0;
             
             newState.players = newState.players.map(p => {
                 if (p.id !== playerId && !p.isBankrupt) {
-                    const newP = { ...p, money: p.money - amount };
-                    newState = addMoneyEffect(newState, -amount, newP.position);
+                    // 只收取玩家能支付的金额（不让其他玩家变成负数）
+                    const actualPay = Math.min(amount, p.money);
+                    actualCollected += actualPay;
+                    const newP = { ...p, money: p.money - actualPay };
+                    newState = addMoneyEffect(newState, -actualPay, newP.position);
                     return newP;
                 }
                 return p;
             });
             
-            player.money += totalCollect;
-            newState = addMoneyEffect(newState, totalCollect, player.position);
+            player.money += actualCollected;
+            newState = addMoneyEffect(newState, actualCollected, player.position);
             
-            newState.gameLog = [...newState.gameLog, `💰 ${player.name} 向每位玩家收取 $${amount}`];
+            newState.gameLog = [...newState.gameLog, `💰 ${player.name} 向每位玩家收取 $${amount}，共收到 $${actualCollected}`];
             break;
         }
         
         case 'BIRTHDAY': {
             const amount = 500;
-            const otherPlayers = newState.players.filter(p => p.id !== playerId && !p.isBankrupt);
-            const totalGift = amount * otherPlayers.length;
+            let totalGift = 0;
             
             newState.players = newState.players.map(p => {
                 if (p.id !== playerId && !p.isBankrupt) {
-                    return { ...p, money: p.money - amount };
+                    // 只收取玩家能支付的金额
+                    const actualGift = Math.min(amount, p.money);
+                    totalGift += actualGift;
+                    const newP = { ...p, money: p.money - actualGift };
+                    newState = addMoneyEffect(newState, -actualGift, newP.position);
+                    return newP;
                 }
                 return p;
             });
@@ -1161,13 +1257,27 @@ export const applyCardEffect = (state: GameState): GameState => {
     newState.activeCard = null;
     newState.activeModal = null;
     
-    // 检查是否破产
+    // 检查是否破产或需要债务危机处理
     if (player.money < 0) {
-        // 简化处理：如果钱为负且没有特定债权人，算作对银行破产
-        const hasAssets = newState.tiles.some(t => t.ownerId === playerId) || 
-                         Object.values(player.portfolio).some(s => s > 0);
+        const debtAmount = Math.abs(player.money);
+        const hasAssets = hasAssetsToLiquidate(newState, playerId);
         
-        if (!hasAssets) {
+        if (hasAssets) {
+            // 有资产可以变现，进入债务危机状态
+            newState.debtCrisis = {
+                debtorId: playerId,
+                creditorId: null, // null 表示对银行/系统的债务
+                amount: debtAmount
+            };
+            newState.activeModal = 'DEBT_CRISIS';
+            newState.gameLog = [...newState.gameLog, `⚠️ ${player.name} 资金不足! 需要变卖资产偿还 $${debtAmount}`];
+            
+            // 如果是 AI，自动处理资产
+            if (player.isAi) {
+                newState = autoLiquidateAssetsForBank(newState, playerIdx);
+            }
+        } else {
+            // 没有资产可以变现，直接破产
             const newPlayer = { ...player, isBankrupt: true };
             newState.players[playerIdx] = newPlayer;
             newState.gameLog = [...newState.gameLog, `💀 ${player.name} 破产了!`];
@@ -1178,11 +1288,22 @@ export const applyCardEffect = (state: GameState): GameState => {
         }
     }
     
+    // 如果发生了移动，处理新位置的落地效果
+    // 注意：排除命运/机会格子以避免无限递归
+    if (needsLanding && !newState.isGameOver && !newState.debtCrisis) {
+        const landingTile = newState.tiles[newState.players[playerIdx].position];
+        // 只处理非命运/机会格子的落地效果
+        if (landingTile.type !== 'FATE' && landingTile.type !== 'CHANCE') {
+            const { newState: afterLanding } = handleLanding(newState);
+            return afterLanding;
+        }
+    }
+    
     return newState;
 }
 
 // 使用出狱卡
-export const useJailFreeCard = (state: GameState, playerId: string): GameState => {
+export const applyJailFreeCard = (state: GameState, playerId: string): GameState => {
     const newState = { ...state };
     const currentCards = newState.jailFreeCards[playerId] || 0;
     

@@ -1,4 +1,14 @@
 import type { FateChanceCard } from './types';
+import { INITIAL_TILES } from './config';
+
+// 获取随机的可传送位置（排除监狱、被捕入狱等特殊格子）
+const getRandomTeleportPosition = (): { position: number; name: string } => {
+    const validTiles = INITIAL_TILES.filter(t => 
+        t.type === 'PROPERTY' || t.type === 'START' || t.type === 'CORNER' || t.type === 'LOTTERY'
+    );
+    const randomTile = validTiles[Math.floor(Math.random() * validTiles.length)];
+    return { position: randomTile.id, name: randomTile.name };
+};
 
 // 命运卡片 - 更多命运相关、人生大事
 export const FATE_CARDS: FateChanceCard[] = [
@@ -38,17 +48,17 @@ export const FATE_CARDS: FateChanceCard[] = [
   {
     id: 'fate_05',
     title: '穿越时空',
-    description: '神秘力量将你传送到起点，并领取工资！',
+    description: '神秘力量将你传送到随机地点！',
     emoji: '⚡',
-    effect: { type: 'MOVE_TO', targetPosition: 0 },
+    effect: { type: 'MOVE_TO_RANDOM' },
     isGood: true
   },
   {
     id: 'fate_06',
     title: '免费度假',
-    description: '获得免费度假券，传送到免费停车处休息',
+    description: '获得免费度假券，传送到随机度假胜地！',
     emoji: '🏖️',
-    effect: { type: 'MOVE_TO', targetPosition: 14 },
+    effect: { type: 'MOVE_TO_RANDOM' },
     isGood: true
   },
   {
@@ -172,10 +182,10 @@ export const CHANCE_CARDS: FateChanceCard[] = [
   },
   {
     id: 'chance_03',
-    title: '直达上海',
-    description: '获得免费机票，直飞上海！',
+    title: '神秘航班',
+    description: '获得免费机票，直飞随机目的地！',
     emoji: '✈️',
-    effect: { type: 'MOVE_TO', targetPosition: 26 },
+    effect: { type: 'MOVE_TO_RANDOM' },
     isGood: true
   },
   {
@@ -294,21 +304,43 @@ export const CHANCE_CARDS: FateChanceCard[] = [
   },
   {
     id: 'chance_18',
-    title: '被遣返起点',
-    description: '签证问题被遣返起点（不领工资）',
+    title: '强制遣返',
+    description: '签证问题被强制遣返到随机地点！（不领工资）',
     emoji: '🛂',
-    effect: { type: 'MOVE_TO', targetPosition: 0, value: 0 }, // value: 0 表示不领工资
+    effect: { type: 'MOVE_TO_RANDOM', value: 0 }, // value: 0 表示不领工资
     isGood: false
   }
 ];
 
+// 处理随机传送卡片：动态生成目标位置和描述
+const processRandomTeleportCard = (card: FateChanceCard): FateChanceCard => {
+    if (card.effect.type !== 'MOVE_TO_RANDOM') {
+        return card;
+    }
+    
+    const { position, name } = getRandomTeleportPosition();
+    const noSalary = card.effect.value === 0;
+    
+    return {
+        ...card,
+        description: `${card.description.replace('随机地点', name).replace('随机度假胜地', name).replace('随机目的地', name)}${noSalary ? '' : ''}`,
+        effect: {
+            type: 'MOVE_TO',
+            targetPosition: position,
+            value: noSalary ? 0 : 1 // 保留是否领工资的标记
+        }
+    };
+};
+
 // 随机抽取一张卡片
 export const drawFateCard = (): FateChanceCard => {
-  return FATE_CARDS[Math.floor(Math.random() * FATE_CARDS.length)];
+    const card = FATE_CARDS[Math.floor(Math.random() * FATE_CARDS.length)];
+    return processRandomTeleportCard(card);
 };
 
 export const drawChanceCard = (): FateChanceCard => {
-  return CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
+    const card = CHANCE_CARDS[Math.floor(Math.random() * CHANCE_CARDS.length)];
+    return processRandomTeleportCard(card);
 };
 
 
