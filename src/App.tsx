@@ -195,9 +195,10 @@ function App() {
       setGameState(prev => ({ ...prev, modalMessage: null, activeModal: null }));
   };
 
-  const handleBuyStock = (companyId: string, amount: number) => setGameState(prev => buyStock(prev, currentPlayer.id, companyId, amount));
-  const handleSellStock = (companyId: string, amount: number) => setGameState(prev => sellStock(prev, currentPlayer.id, companyId, amount));
-  const handleBuyLottery = (numbers: number[]) => setGameState(prev => buyLottery(prev, currentPlayer.id, numbers));
+  // 人类玩家的股票和彩票操作
+  const handleBuyStock = (companyId: string, amount: number) => setGameState(prev => buyStock(prev, humanPlayer.id, companyId, amount));
+  const handleSellStock = (companyId: string, amount: number) => setGameState(prev => sellStock(prev, humanPlayer.id, companyId, amount));
+  const handleBuyLottery = (numbers: number[]) => setGameState(prev => buyLottery(prev, humanPlayer.id, numbers));
   
   // 出售房产（当前玩家，用于债务危机）
   const onSellPropertyHandler = (id: number) => {
@@ -441,7 +442,7 @@ function App() {
         isOpen={showStock} 
         onClose={closeModal} 
         companies={gameState.companies}
-        player={currentPlayer}
+        player={humanPlayer}
         onBuy={handleBuyStock}
         onSell={handleSellStock}
       />
@@ -451,7 +452,7 @@ function App() {
         onClose={closeModal}
         jackpot={gameState.lotteryJackpot}
         daysUntilDraw={gameState.daysUntilDraw}
-        player={currentPlayer}
+        player={humanPlayer}
         onBuy={handleBuyLottery}
       />
 
