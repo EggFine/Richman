@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { X, Building2 } from 'lucide-react';
 import type { Tile, Player } from '../game/types';
 import AssetCard from './AssetCard';
+import { useTranslation } from '../i18n';
 
 interface AssetsModalProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ interface AssetsModalProps {
 }
 
 const AssetsModal: React.FC<AssetsModalProps> = ({ isOpen, onClose, player, tiles, onSell, onMortgage, onRedeem }) => {
+  const t = useTranslation();
+
   if (!isOpen) return null;
 
   const myProperties = tiles.filter(t => t.ownerId === player.id);
@@ -31,7 +34,7 @@ const AssetsModal: React.FC<AssetsModalProps> = ({ isOpen, onClose, player, tile
                 <span className="bg-gradient-to-br from-yellow-400 to-orange-500 w-12 h-12 rounded-2xl flex items-center justify-center text-black shadow-lg">
                     <Building2 />
                 </span>
-                我的不动产管理
+                {t.assets.title}
             </h2>
             <button onClick={onClose} className="p-3 hover:bg-slate-800 rounded-full transition-colors bg-slate-800/50"><X /></button>
         </div>
@@ -40,7 +43,7 @@ const AssetsModal: React.FC<AssetsModalProps> = ({ isOpen, onClose, player, tile
             {myProperties.length === 0 ? (
                 <div className="text-center py-20 text-slate-500 italic flex flex-col items-center gap-4">
                     <Building2 size={64} className="opacity-20"/>
-                    <p>您名下暂无房产，快去大富翁地图上跑马圈地吧！</p>
+                    <p>{t.assets.noProperties}</p>
                 </div>
             ) : (
                 <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 place-items-center sm:place-items-stretch">
@@ -58,8 +61,8 @@ const AssetsModal: React.FC<AssetsModalProps> = ({ isOpen, onClose, player, tile
         </div>
         
         <div className="mt-6 flex justify-between items-center text-slate-400 font-mono text-sm px-4">
-             <div>房产数量: {myProperties.length}</div>
-             <div>总资产估值: <span className="text-green-400 font-bold">${myProperties.reduce((sum, p) => sum + (p.price || 0) + ((p.level || 0) * (p.price || 0)), 0).toLocaleString()}</span></div>
+             <div>{t.assets.propertyCount}: {myProperties.length}</div>
+             <div>{t.assets.totalValue}: <span className="text-green-400 font-bold">${myProperties.reduce((sum, p) => sum + (p.price || 0) + ((p.level || 0) * (p.price || 0)), 0).toLocaleString()}</span></div>
         </div>
 
       </motion.div>

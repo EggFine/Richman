@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { AlertTriangle, Building2, TrendingDown, DollarSign } from 'lucide-react';
 import type { Tile, Player, Company, DebtCrisis } from '../game/types';
 import AssetCard from './AssetCard';
+import { useTranslation } from '../i18n';
 
 interface DebtCrisisModalProps {
   isOpen: boolean;
@@ -27,12 +28,14 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
   onSellStock,
   onDeclareFailure
 }) => {
+  const t = useTranslation();
+
   if (!isOpen || !debtCrisis) return null;
 
   const myProperties = tiles.filter(t => t.ownerId === player.id);
   const debtAmount = debtCrisis.amount;
   const currentMoney = player.money;
-  const needMore = Math.abs(currentMoney); // 还需要多少钱才能资金为正
+  const needMore = Math.abs(currentMoney);
 
   // 计算股票持仓
   const stockHoldings = companies.filter(c => (player.portfolio[c.id] || 0) > 0).map(c => ({
@@ -61,8 +64,8 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
               <AlertTriangle size={28} />
             </motion.span>
             <div>
-              <h2 className="text-2xl font-black text-red-400 tracking-tight">⚠️ 资金危机!</h2>
-              <p className="text-slate-400 text-sm">您必须变卖资产来偿还债务</p>
+              <h2 className="text-2xl font-black text-red-400 tracking-tight">{t.debtCrisis.title}</h2>
+              <p className="text-slate-400 text-sm">{t.debtCrisis.subtitle}</p>
             </div>
           </div>
         </div>
@@ -71,21 +74,21 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
         <div className="bg-black/40 rounded-2xl p-4 mb-4 border border-red-900/50">
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="bg-red-900/30 rounded-xl p-3">
-              <div className="text-red-400 text-xs font-mono mb-1">欠款金额</div>
+              <div className="text-red-400 text-xs font-mono mb-1">{t.debtCrisis.debtAmount}</div>
               <div className="text-2xl font-black text-red-300">${debtAmount.toLocaleString()}</div>
             </div>
             <div className="bg-slate-800/50 rounded-xl p-3">
-              <div className="text-slate-400 text-xs font-mono mb-1">当前余额</div>
+              <div className="text-slate-400 text-xs font-mono mb-1">{t.debtCrisis.currentBalance}</div>
               <div className={`text-2xl font-black ${currentMoney >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 ${currentMoney.toLocaleString()}
               </div>
             </div>
             <div className={`rounded-xl p-3 ${canResolve ? 'bg-green-900/30' : 'bg-orange-900/30'}`}>
               <div className={`text-xs font-mono mb-1 ${canResolve ? 'text-green-400' : 'text-orange-400'}`}>
-                {canResolve ? '状态' : '还需筹集'}
+                {canResolve ? t.debtCrisis.status : t.debtCrisis.needMore}
               </div>
               <div className={`text-2xl font-black ${canResolve ? 'text-green-300' : 'text-orange-300'}`}>
-                {canResolve ? '✅ 已解决' : `$${needMore.toLocaleString()}`}
+                {canResolve ? t.debtCrisis.resolved : `$${needMore.toLocaleString()}`}
               </div>
             </div>
           </div>
@@ -98,8 +101,8 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
             <div>
               <div className="flex items-center gap-2 text-slate-300 font-bold mb-3">
                 <Building2 size={18} />
-                <span>我的房产</span>
-                <span className="text-xs text-slate-500 font-normal">（点击抵押或出售来获取资金）</span>
+                <span>{t.debtCrisis.myProperties}</span>
+                <span className="text-xs text-slate-500 font-normal">{t.debtCrisis.clickToMortgageOrSell}</span>
               </div>
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {myProperties.map(prop => (
@@ -121,8 +124,8 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
             <div>
               <div className="flex items-center gap-2 text-slate-300 font-bold mb-3">
                 <TrendingDown size={18} />
-                <span>我的股票</span>
-                <span className="text-xs text-slate-500 font-normal">（点击卖出来获取资金）</span>
+                <span>{t.debtCrisis.myStocks}</span>
+                <span className="text-xs text-slate-500 font-normal">{t.debtCrisis.clickToSellStocks}</span>
               </div>
               <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
                 {stockHoldings.map(stock => (
@@ -140,7 +143,7 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
                       <div>
                         <div className="font-bold text-slate-200">{stock.name}</div>
                         <div className="text-xs text-slate-400">
-                          {stock.shares} 股 × ${stock.price} = <span className="text-green-400">${stock.value.toLocaleString()}</span>
+                          {stock.shares} {t.common.shares} × ${stock.price} = <span className="text-green-400">${stock.value.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -149,7 +152,7 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
                       className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors flex items-center gap-1"
                     >
                       <DollarSign size={14} />
-                      全部卖出
+                      {t.debtCrisis.sellAll}
                     </button>
                   </div>
                 ))}
@@ -161,8 +164,8 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
           {myProperties.length === 0 && stockHoldings.length === 0 && (
             <div className="text-center py-10 text-red-400">
               <AlertTriangle size={48} className="mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-bold">您没有任何可变卖的资产</p>
-              <p className="text-sm text-slate-500 mt-2">无法偿还债务，将宣告破产</p>
+              <p className="text-lg font-bold">{t.debtCrisis.noAssetsToSell}</p>
+              <p className="text-sm text-slate-500 mt-2">{t.debtCrisis.cannotRepay}</p>
             </div>
           )}
         </div>
@@ -170,14 +173,14 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
         {/* 底部操作 */}
         <div className="mt-4 pt-4 border-t border-red-900/50 flex justify-between items-center">
           <div className="text-sm text-slate-400">
-            提示: 抵押房产可获得 50% 价值，出售房产可获得 80% 价值
+            {t.debtCrisis.tip}
           </div>
           {!canResolve && myProperties.length === 0 && stockHoldings.length === 0 && (
             <button
               onClick={onDeclareFailure}
               className="bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-xl font-bold transition-colors"
             >
-              宣告破产
+              {t.debtCrisis.declareBankruptcy}
             </button>
           )}
           {canResolve && (
@@ -186,7 +189,7 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
               animate={{ scale: 1 }}
               className="text-green-400 font-bold text-lg flex items-center gap-2"
             >
-              ✅ 债务已清偿! 点击任意位置继续...
+              {t.debtCrisis.debtCleared}
             </motion.div>
           )}
         </div>
@@ -196,4 +199,3 @@ const DebtCrisisModal: React.FC<DebtCrisisModalProps> = ({
 };
 
 export default DebtCrisisModal;
-

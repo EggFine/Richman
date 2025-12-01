@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+@layer base {
+  body {
+    @apply antialiased text-slate-200 bg-slate-950;
+  }
+
+  /* Custom Scrollbar for Webkit */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-900;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-700 rounded-full hover:bg-slate-600 transition-colors;
+  }
+
+  ::-webkit-scrollbar-corner {
+    @apply bg-slate-900;
+  }
+}

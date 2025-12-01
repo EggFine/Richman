@@ -4,13 +4,31 @@ export const BOARD_SIZE = 28;
 export const INITIAL_MONEY = 15000;
 
 // Companies for the Stock Market
+// 价格区间设计：5-50元，适合玩家2000-5000余额
 export const INITIAL_COMPANIES: Company[] = [
-  { id: 'c1', name: '企鹅科技', price: 300, volatility: 0.15, history: [300, 300, 300, 300, 300], industry: '科技', color: 'text-blue-400' },
-  { id: 'c2', name: '福报电商', price: 200, volatility: 0.12, history: [200, 200, 200, 200, 200], industry: '互联网', color: 'text-orange-400' },
-  { id: 'c3', name: '酱香白酒', price: 1800, volatility: 0.05, history: [1800, 1800, 1800, 1800, 1800], industry: '消费', color: 'text-red-500' },
-  { id: 'c4', name: '新能源车', price: 150, volatility: 0.25, history: [150, 150, 150, 150, 150], industry: '制造', color: 'text-green-400' },
-  { id: 'c5', name: '宇宙银行', price: 50, volatility: 0.03, history: [50, 50, 50, 50, 50], industry: '金融', color: 'text-yellow-400' },
-  { id: 'c6', name: '神奇制药', price: 400, volatility: 0.18, history: [400, 400, 400, 400, 400], industry: '医疗', color: 'text-pink-400' },
+  // 科技板块
+  { id: 'c1', name: '企鹅科技', price: 28, volatility: 0.15, history: [28, 28, 28, 28, 28], industry: '科技', color: 'text-blue-400' },
+  { id: 'c2', name: '菊花手机', price: 35, volatility: 0.18, history: [35, 35, 35, 35, 35], industry: '科技', color: 'text-red-400' },
+  { id: 'c3', name: '字节蹦蹦', price: 42, volatility: 0.20, history: [42, 42, 42, 42, 42], industry: '科技', color: 'text-cyan-400' },
+  
+  // 互联网板块
+  { id: 'c4', name: '福报电商', price: 18, volatility: 0.12, history: [18, 18, 18, 18, 18], industry: '互联网', color: 'text-orange-400' },
+  { id: 'c5', name: '东哥快递', price: 22, volatility: 0.14, history: [22, 22, 22, 22, 22], industry: '互联网', color: 'text-rose-400' },
+  
+  // 消费板块
+  { id: 'c6', name: '酱香白酒', price: 50, volatility: 0.05, history: [50, 50, 50, 50, 50], industry: '消费', color: 'text-amber-500' },
+  { id: 'c7', name: '奶茶之光', price: 15, volatility: 0.16, history: [15, 15, 15, 15, 15], industry: '消费', color: 'text-pink-400' },
+  
+  // 制造板块
+  { id: 'c8', name: '新能源车', price: 12, volatility: 0.25, history: [12, 12, 12, 12, 12], industry: '制造', color: 'text-green-400' },
+  { id: 'c9', name: '光伏能源', price: 8, volatility: 0.22, history: [8, 8, 8, 8, 8], industry: '制造', color: 'text-yellow-300' },
+  
+  // 金融板块
+  { id: 'c10', name: '宇宙银行', price: 6, volatility: 0.03, history: [6, 6, 6, 6, 6], industry: '金融', color: 'text-yellow-400' },
+  { id: 'c11', name: '平安保险', price: 10, volatility: 0.06, history: [10, 10, 10, 10, 10], industry: '金融', color: 'text-emerald-400' },
+  
+  // 医疗板块
+  { id: 'c12', name: '神奇制药', price: 32, volatility: 0.18, history: [32, 32, 32, 32, 32], industry: '医疗', color: 'text-purple-400' },
 ];
 
 // Map Layout: Clockwise from Bottom-Right

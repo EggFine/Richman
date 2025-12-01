@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Home, Building2, Sparkles, Rocket, Lock, Ticket, Coffee, Flag, Ban, User, Bot } from 'lucide-react';
+import { useTranslation } from '../i18n';
 
 interface TileProps {
   tile: TileType;
@@ -11,20 +12,21 @@ interface TileProps {
 }
 
 const Tile: React.FC<TileProps> = ({ tile, players }) => {
+  const t = useTranslation();
   const isProperty = tile.type === 'PROPERTY';
   
   const colorMap: Record<string, string> = {
-    blue: 'bg-blue-600',
-    green: 'bg-green-600',
-    indigo: 'bg-indigo-600',
-    rose: 'bg-rose-600',
-    purple: 'bg-purple-600',
-    orange: 'bg-orange-600',
-    pink: 'bg-pink-600',
-    gray: 'bg-slate-500',
+    blue: 'bg-gradient-to-br from-blue-500 to-blue-700',
+    green: 'bg-gradient-to-br from-green-500 to-green-700',
+    indigo: 'bg-gradient-to-br from-indigo-500 to-indigo-700',
+    rose: 'bg-gradient-to-br from-rose-500 to-rose-700',
+    purple: 'bg-gradient-to-br from-purple-500 to-purple-700',
+    orange: 'bg-gradient-to-br from-orange-500 to-orange-700',
+    pink: 'bg-gradient-to-br from-pink-500 to-pink-700',
+    gray: 'bg-gradient-to-br from-slate-400 to-slate-600',
   };
   
-  const headerColor = colorMap[tile.color || 'gray'] || 'bg-slate-500';
+  const headerColor = colorMap[tile.color || 'gray'] || 'bg-gradient-to-br from-slate-400 to-slate-600';
 
   const iconClass = "w-3 h-3 sm:w-4 sm:h-4 xl:w-5 xl:h-5";
 
@@ -41,12 +43,25 @@ const Tile: React.FC<TileProps> = ({ tile, players }) => {
       }
   };
 
+  // Special styling for non-property tiles
+  const getTileBackground = () => {
+    if (isProperty) return "bg-white";
+    switch (tile.type) {
+        case 'START': return "bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200";
+        case 'JAIL': return "bg-slate-100 border-slate-300 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:8px_8px]";
+        case 'TO_JAIL': return "bg-slate-50 border-slate-200";
+        case 'FATE': return "bg-gradient-to-br from-fuchsia-50 to-purple-100 border-purple-200";
+        case 'CHANCE': return "bg-gradient-to-br from-sky-50 to-blue-100 border-blue-200";
+        case 'LOTTERY': return "bg-gradient-to-br from-pink-50 to-rose-100 border-rose-200";
+        case 'CORNER': return "bg-slate-50 border-slate-200";
+        default: return "bg-white";
+    }
+  };
+
   return (
     <div className={twMerge(
-        "relative flex flex-col border-[1px] sm:border-2 border-slate-800 h-10 w-10 sm:h-16 sm:w-16 md:h-20 md:w-20 xl:h-28 xl:w-28 bg-white shadow-md select-none overflow-hidden transition-all hover:z-20 hover:scale-110 hover:shadow-2xl rounded sm:rounded-lg",
-        tile.type === 'CORNER' && "bg-slate-100",
-        tile.type === 'JAIL' && "bg-slate-200",
-        tile.type === 'START' && "bg-slate-50"
+        "relative flex flex-col border-[1px] sm:border-2 border-slate-800/80 h-10 w-10 sm:h-16 sm:w-16 md:h-20 md:w-20 xl:h-28 xl:w-28 shadow-[0_2px_4px_rgba(0,0,0,0.1)] select-none overflow-hidden transition-all duration-200 hover:z-20 hover:scale-110 hover:shadow-[0_10px_20px_rgba(0,0,0,0.2)] rounded sm:rounded-xl",
+        getTileBackground()
     )}>
       {/* Header Color Strip */}
       <div className={clsx(headerColor, "h-2.5 sm:h-5 xl:h-7 w-full flex items-center justify-center font-black border-b-[0.5px] sm:border-b-2 border-slate-800/20 text-white shadow-sm")}>
@@ -68,7 +83,7 @@ const Tile: React.FC<TileProps> = ({ tile, players }) => {
             <span className="text-slate-700 font-mono font-black text-[5px] sm:text-[8px] xl:text-xs bg-slate-100 px-0.5 sm:px-1 rounded leading-none">${tile.price}</span>
             {tile.baseRent && tile.level !== undefined && tile.ownerId && (
                 <span className="hidden sm:block text-[8px] sm:text-[10px] text-slate-500 mt-0.5 font-semibold">
-                    租:${tile.baseRent * Math.pow(3, tile.level)}
+                    {t.assets.rent}:${tile.baseRent * Math.pow(3, tile.level)}
                 </span>
             )}
           </div>
@@ -100,9 +115,9 @@ const Tile: React.FC<TileProps> = ({ tile, players }) => {
                     ? "border-blue-300 bg-blue-900/90 text-blue-50" 
                     : "border-red-300 bg-red-900/90 text-red-50"
             )}>
-                <span>抵押</span>
+                <span>{t.assets.mortgage}</span>
                 <span className="text-[6px] sm:text-[8px] opacity-90 font-medium">
-                    {tile.ownerId?.endsWith('0') ? '我' : 'AI'}
+                    {tile.ownerId?.endsWith('0') ? t.common.me : t.common.ai}
                 </span>
             </div>
         </div>
@@ -124,7 +139,7 @@ const Tile: React.FC<TileProps> = ({ tile, players }) => {
           >
              {p.id === 'p0' ? <User className="w-2 h-2 sm:w-4 sm:h-4" /> : <Bot className="w-2 h-2 sm:w-4 sm:h-4" />}
              <div className="hidden sm:block absolute -bottom-1 bg-black/60 text-[8px] px-1 rounded text-white font-bold">
-                 {p.id === 'p0' ? '我' : 'AI'}
+                 {p.id === 'p0' ? t.common.me : t.common.ai}
              </div>
           </motion.div>
         ))}

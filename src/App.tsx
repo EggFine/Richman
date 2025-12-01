@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, Sparkles, Building2 } from 'lucide-react';
+import { RotateCcw, Sparkles, Building2, Globe } from 'lucide-react';
 
 import GameBoard from './components/GameBoard';
 import PlayerInfo from './components/PlayerInfo';
@@ -22,11 +22,13 @@ import {
     aiAutoRedeemProperties
 } from './game/logic';
 import type { GameState } from './game/types';
+import { useI18n, languageFlags, languageNames } from './i18n';
 
 // Helper to pause
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 function App() {
+  const { t, language, toggleLanguage } = useI18n();
   const [gameState, setGameState] = useState<GameState>(getInitialState);
   const [isMoving, setIsMoving] = useState(false); // Block inputs during move animation
 
@@ -103,10 +105,10 @@ function App() {
         
         players[prev.currentPlayerIndex] = player;
         const message = needsJailSkip
-          ? `🔒 ${player.name} 仍在坐牢, 剩余 ${player.jailTurns} 回合.`
+          ? t.logs.inJail(player.name, player.jailTurns)
           : player.restTurns > 0
-              ? `☕ ${player.name} 继续在免费停车休息, 剩余 ${player.restTurns} 回合.`
-              : `☕ ${player.name} 结束休息, 准备继续出发!`;
+              ? t.logs.continueRest(player.name, player.restTurns)
+              : t.logs.endRest(player.name);
         
         return {
           ...prev,
@@ -130,7 +132,7 @@ function App() {
     setGameState(prev => ({
         ...prev,
         diceValue: dice,
-        gameLog: [...prev.gameLog, `${prev.players[prev.currentPlayerIndex].name} 掷出了 ${dice[0]} + ${dice[1]} = ${total} 点.`]
+        gameLog: [...prev.gameLog, t.logs.rollDice(prev.players[prev.currentPlayerIndex].name, dice[0], dice[1], total)]
     }));
 
     await wait(600); // Wait for dice animation
@@ -148,7 +150,7 @@ function App() {
     });
 
     setIsMoving(false);
-  }, [endTurn, gameState, isMoving]);
+  }, [endTurn, gameState, isMoving, t.logs]);
 
   // AI Turn Logic
   useEffect(() => {
@@ -169,7 +171,7 @@ function App() {
   const onPass = () => setGameState(prev => skipAction(prev));
   
   const onReset = () => {
-      if (confirm("确定要重新开始游戏吗? 当前进度将丢失.")) {
+      if (confirm(t.app.confirmReset)) {
           setGameState(resetGame());
       }
   };
@@ -238,7 +240,7 @@ function App() {
       return {
         ...prev,
         players: newPlayers,
-        gameLog: [...prev.gameLog, `💀 ${debtor.name} 无力偿还债务，破产了!`],
+        gameLog: [...prev.gameLog, t.logs.bankrupt(debtor.name)],
         isGameOver: true,
         winner: creditor.name,
         debtCrisis: null,
@@ -275,29 +277,46 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-2 sm:p-4 font-sans text-slate-200 select-none overflow-x-hidden">
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-start xl:justify-center p-1 sm:p-4 font-sans text-slate-200 select-none overflow-x-hidden pb-8">
       <motion.div 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-6 mt-2 sm:mt-0"
+        className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 mb-2 sm:mb-6 mt-1 sm:mt-0 w-full justify-between max-w-7xl px-2"
       >
-        <h1 className="text-2xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-500 drop-shadow-lg tracking-wider">
-          RICHMAN <span className="text-xs sm:text-2xl text-white/50 font-mono align-super">v4</span>
-        </h1>
-        <div className="bg-slate-800 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs font-mono text-slate-400 border border-slate-700 flex items-center gap-1 sm:gap-2">
-            <span>📅 第 {gameState.day} 天</span>
-            <span className="w-px h-3 bg-slate-600"></span>
-            <span className="flex items-center gap-1 text-pink-400"><Sparkles size={10}/> 下次开奖: {gameState.daysUntilDraw}天</span>
+        <div className="flex items-baseline gap-2">
+            <h1 className="text-xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-500 drop-shadow-lg tracking-wider">
+            {t.app.title}
+            </h1>
+            <span className="text-[10px] sm:text-2xl text-slate-500 font-mono">{t.app.version}</span>
+        </div>
+        
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Language Switcher */}
+          <button 
+            onClick={toggleLanguage}
+            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold transition-all border border-slate-700 hover:border-slate-600 shadow-sm active:scale-95"
+            title={languageNames[language === 'zh' ? 'en' : 'zh']}
+          >
+            <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>{languageFlags[language]}</span>
+            <span className="hidden sm:inline">{languageNames[language]}</span>
+          </button>
+
+          <div className="bg-slate-900 px-3 py-1.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-mono text-slate-400 border border-slate-800 flex items-center gap-2 sm:gap-4 shadow-sm">
+              <span className="flex items-center gap-1">📅 <span className="text-slate-200 font-bold">{language === 'zh' ? `第 ${gameState.day} 天` : `Day ${gameState.day}`}</span></span>
+              <span className="w-px h-3 bg-slate-700"></span>
+              <span className="flex items-center gap-1 text-pink-400 font-bold"><Sparkles size={10}/> {language === 'zh' ? `${gameState.daysUntilDraw}天后开奖` : `Draw in ${gameState.daysUntilDraw}d`}</span>
+          </div>
         </div>
       </motion.div>
       
-      <div className="flex flex-col xl:flex-row gap-4 sm:gap-8 items-center xl:items-start w-full max-w-7xl justify-center">
+      <div className="flex flex-col xl:flex-row gap-3 sm:gap-8 items-center xl:items-start w-full max-w-[95%] xl:max-w-[1800px] justify-center flex-1">
         
         {/* Left Panel: Board */}
-        <div className="flex-shrink-0 w-full sm:w-auto flex justify-center origin-top xl:origin-top-right">
+        <div className="flex-shrink-0 w-full sm:w-auto flex justify-center origin-top xl:origin-top-right z-10">
           <GameBoard gameState={gameState}>
-            <div className="h-full w-full flex flex-col justify-center items-center relative p-1 sm:p-4">
-               <div className="absolute top-1 sm:top-4 w-full text-center text-slate-400 font-bold text-[8px] sm:text-xs uppercase tracking-[0.3em] opacity-50">Central Park</div>
+            <div className="h-full w-full flex flex-col justify-center items-center relative p-0.5 sm:p-4">
+               <div className="absolute top-2 sm:top-4 w-full text-center text-slate-500/30 font-black text-[8px] sm:text-xs uppercase tracking-[0.2em]">{t.app.centralPark}</div>
                
                <Controls 
                   onRoll={handleRoll} 
@@ -316,32 +335,36 @@ function App() {
 
                <button 
                   onClick={() => setGameState(prev => ({...prev, activeModal: 'ASSETS'}))}
-                  className="mt-2 sm:mt-4 flex items-center gap-1 bg-slate-200 text-slate-800 px-2 py-1 sm:px-4 sm:py-2 rounded-full text-[10px] sm:text-xs font-bold hover:bg-white hover:scale-105 transition-all shadow-lg"
+                  className="mt-2 sm:mt-4 flex items-center gap-1.5 bg-slate-800 text-slate-300 border border-slate-600 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-[10px] sm:text-xs font-bold hover:bg-slate-700 hover:text-white transition-all shadow-lg active:scale-95"
                >
-                   <Building2 className="w-3 h-3 sm:w-4 sm:h-4"/> 我的资产
+                   <Building2 className="w-3 h-3 sm:w-4 sm:h-4"/> {t.app.myAssets}
                </button>
 
-               <div className="mt-1 sm:mt-4 text-center text-slate-400 text-[10px] sm:text-xs font-mono bg-slate-100/50 px-2 py-0.5 sm:px-3 sm:py-1 rounded-full">
-                   当前回合: <span className="font-bold text-slate-800">{gameState.players[gameState.currentPlayerIndex].name}</span>
+               <div className="mt-auto mb-1 sm:mb-0 sm:mt-4 text-center text-slate-500 text-[9px] sm:text-xs font-mono bg-slate-900/50 px-2 py-1 rounded-lg border border-white/5">
+                   {t.common.turn}: <span className="font-bold text-slate-300">{gameState.players[gameState.currentPlayerIndex].name}</span>
                </div>
             </div>
           </GameBoard>
         </div>
 
         {/* Right Panel: Info & Logs */}
-        <div className="flex flex-col gap-2 sm:gap-4 w-full max-w-md h-auto max-h-[500px] sm:h-[650px] sm:max-h-none bg-slate-800/50 p-2 sm:p-4 rounded-2xl sm:rounded-3xl border border-slate-700/50 shadow-2xl backdrop-blur-md">
-           <div className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest mb-1 sm:mb-2">玩家状态</div>
+        <div className="flex flex-col gap-2 sm:gap-4 w-full xl:flex-1 xl:max-w-[600px] xl:h-[650px] bg-slate-900/30 p-2 sm:p-4 rounded-xl sm:rounded-3xl border border-slate-800 shadow-xl backdrop-blur-sm">
            
-           {/* Player Stats */}
-           <div className="flex flex-col gap-2 sm:gap-3">
+           {/* Player Stats - Grid on Mobile, List on Desktop */}
+           <div className="grid grid-cols-2 xl:flex xl:flex-col gap-2 sm:gap-3">
              {gameState.players.map((p, i) => (
                <PlayerInfo key={p.id} player={p} isCurrent={i === gameState.currentPlayerIndex} />
              ))}
            </div>
 
-           <div className="mt-2 sm:mt-4 text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest mb-1 sm:mb-2">游戏记录</div>
-           {/* Game Log */}
-           <div className="flex-1 overflow-hidden flex flex-col">
+           <div className="flex items-center gap-2 mt-1 sm:mt-2">
+             <div className="h-px bg-slate-800 flex-1"></div>
+             <span className="text-[10px] sm:text-xs font-bold text-slate-600 uppercase tracking-widest">{t.app.gameLog}</span>
+             <div className="h-px bg-slate-800 flex-1"></div>
+           </div>
+
+           {/* Game Log - Adjustable height on mobile */}
+           <div className="flex-1 min-h-[100px] xl:min-h-0 overflow-hidden flex flex-col">
               <GameLog logs={gameState.gameLog} />
            </div>
            
@@ -350,12 +373,12 @@ function App() {
                 <motion.div 
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 rounded-3xl"
+                    className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 rounded-3xl backdrop-blur-sm"
                 >
-                    <div className="bg-yellow-400 text-black font-black p-8 text-center text-3xl rounded-2xl shadow-2xl border-8 border-white animate-bounce">
-                    🏆 {gameState.winner} 获胜! 🏆
-                    <button onClick={onReset} className="mt-6 bg-black text-white text-sm px-4 py-2 rounded-lg font-bold hover:bg-gray-800 flex items-center gap-2 mx-auto">
-                        <RotateCcw size={16}/> 重新开始
+                    <div className="bg-gradient-to-b from-yellow-300 to-yellow-500 text-black font-black p-8 text-center text-3xl rounded-2xl shadow-2xl border-8 border-white/20 animate-bounce">
+                    🏆 {t.app.wins.replace('{name}', gameState.winner)} 🏆
+                    <button onClick={onReset} className="mt-6 bg-black text-white text-sm px-6 py-3 rounded-xl font-bold hover:bg-gray-800 flex items-center gap-2 mx-auto shadow-lg">
+                        <RotateCcw size={16}/> {t.app.playAgain}
                     </button>
                     </div>
                 </motion.div>
@@ -382,10 +405,10 @@ function App() {
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="text-4xl mb-4">✨</div>
-                    <h3 className="text-2xl font-black mb-2 text-purple-700">{gameState.modalTitle || '事件发生'}</h3>
+                    <h3 className="text-2xl font-black mb-2 text-purple-700">{gameState.modalTitle || t.app.eventTitle}</h3>
                     <p className="text-lg font-medium text-slate-600 mb-6">{gameState.modalMessage}</p>
                     <button onClick={closeModal} className="bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 transition-colors w-full shadow-lg">
-                        确定
+                        {t.common.confirm}
                     </button>
                 </motion.div>
             </motion.div>
