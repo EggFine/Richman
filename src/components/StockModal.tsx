@@ -21,6 +21,14 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, companies, pla
   const [amount, setAmount] = useState(10);
   const [stepSize, setStepSize] = useState(10);
 
+  // 关闭时重置状态
+  const handleClose = () => {
+    setSelectedCompanyId(null);
+    setAmount(10);
+    setStepSize(10);
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   const selectedCompany = companies.find(c => c.id === selectedCompanyId);
@@ -278,7 +286,7 @@ const StockModal: React.FC<StockModalProps> = ({ isOpen, onClose, companies, pla
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{t.stock.subtitle}</div>
                 </div>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-white"><X /></button>
+            <button onClick={handleClose} className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-white"><X /></button>
         </div>
 
         {/* Content */}
